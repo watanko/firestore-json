@@ -1,0 +1,59 @@
+site_name: Firestore JSON
+site_description: Typed Python CRUD for cloud Firestore, the official emulator, and JSON
+repo_url: https://github.com/watanko/firestore-json
+repo_name: watanko/firestore-json
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  language: ja
+  features:
+    - navigation.sections
+    - content.code.copy
+  palette:
+    - scheme: default
+      primary: indigo
+      toggle:
+        icon: material/brightness-7
+        name: ダークモードに切替
+    - scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/brightness-4
+        name: ライトモードに切替
+
+plugins:
+  - search:
+      lang: ja
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+            show_source: false
+            show_root_heading: true
+            show_signature_annotations: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - tables
+  - toc:
+      permalink: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+
+nav:
+  - ホーム: index.md
+  - はじめに:
+      - インストール・モード設定: getting-started.md
+      - クイックスタート: quickstart.md
+  - ガイド:
+      - 設計・互換範囲: guides/compatibility.md
+      - 保存と永続化: guides/persistence.md
+      - エラー: guides/errors.md
+  - Pythonリファレンス: reference/api.md

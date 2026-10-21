@@ -1,0 +1,54 @@
+version: '3'
+
+tasks:
+  check:
+    desc: Run every static quality gate
+    cmds:
+      - uv run ruff check .
+      - uv run ruff format --check .
+      - uv run ty check
+      - uv run lint-imports
+      - uv run deptry .
+      - uv run vulture src tests
+      - uv run xenon --max-absolute B --max-modules A --max-average A src tests
+      - semgrep scan --config .semgrep.yml --error --metrics off
+      - uv run zizmor .github/workflows
+
+  test:
+    desc: Run JSON contracts and unit tests
+    cmds:
+      - uv run pytest
+
+  test:emulator:
+    desc: Run the same contracts against an explicitly configured emulator
+    cmds:
+      - FIRESTORE_JSON_TEST_BACKEND=emulator uv run pytest tests/contract
+
+  docs:
+    desc: Build documentation with strict validation
+    cmds:
+      - uv run mkdocs build --strict
+
+  build:
+    desc: Build wheel and source distributions
+    cmds:
+      - uv build
+
+  secret:scan:
+    desc: Scan the entire working tree for secrets
+    cmds:
+      - gitleaks dir . --redact --no-banner
+
+  security:
+    desc: Audit locked runtime and optional Google dependencies
+    cmds:
+      - uv export --frozen --all-extras --no-dev --no-emit-project --format requirements-txt | uv run pip-audit --requirement /dev/stdin --require-hashes --disable-pip
+
+  verify:
+    desc: Run checks, tests, docs, build, and secret scan in order
+    cmds:
+      - task: check
+      - task: test
+      - task: docs
+      - task: build
+      - task: secret:scan

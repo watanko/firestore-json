@@ -1,0 +1,26 @@
+rules:
+  - id: forbid-any
+    languages: [python]
+    message: Define a concrete boundary model instead of Any.
+    severity: ERROR
+    pattern-either:
+      - pattern: from typing import Any
+      - pattern: typing.Any
+  - id: forbid-swallowed-exceptions
+    languages: [python]
+    message: Do not swallow storage or validation errors.
+    severity: ERROR
+    pattern: |
+      try:
+        ...
+      except $ERROR:
+        pass
+  - id: forbid-bare-except
+    languages: [python]
+    message: Catch an explicit external failure type.
+    severity: ERROR
+    pattern: |
+      try:
+        ...
+      except:
+        ...

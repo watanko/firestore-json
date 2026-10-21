@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Scan working tree for secrets
+        run: |
+          curl --fail --silent --show-error --location \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz \
+            --output /tmp/gitleaks.tar.gz
+          printf '%s\n' '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  /tmp/gitleaks.tar.gz' | sha256sum --check
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          /tmp/gitleaks dir . --redact --no-banner
+
+  quality:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.12', '3.13']
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+      - name: Install locked dependencies
+        run: uv sync --frozen --all-extras --all-groups
+      - name: Lint, format, types, layering, dependencies, dead code, complexity
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+          uv run ty check
+          uv run lint-imports
+          uv run deptry .
+          uv run vulture src tests
+          uv run xenon --max-absolute B --max-modules A --max-average A src tests
+          uv run zizmor .github/workflows
+      - name: Semantic rules
+        run: uvx --from semgrep==1.178.0 semgrep scan --config .semgrep.yml --error --metrics off
+      - name: JSON contracts and unit tests
+        run: uv run pytest --cov=firestore_json --cov-report=term-missing
+      - name: Documentation and distributions
+        run: |
+          uv run mkdocs build --strict
+          uv build
+      - name: Dependency security audit
+        run: uv export --frozen --all-extras --no-dev --no-emit-project --format requirements-txt | uv run pip-audit --requirement /dev/stdin --require-hashes --disable-pip
+
+  emulator:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+      - name: Install locked dependencies
+        run: uv sync --frozen --all-extras --all-groups
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Run official emulator contract tests
+        env:
+          FIRESTORE_EMULATOR_HOST: 127.0.0.1:18787
+        run: |
+          curl --fail --silent --show-error --location \
+            https://storage.googleapis.com/firebase-preview-drop/emulator/cloud-firestore-emulator-v1.22.0.jar \
+            --output /tmp/firestore-emulator.jar
+          printf '%s\n' '9b6498b7f62714d67f48f59b3818883cd682dbcd46b9f59511de81c97bb5166c  /tmp/firestore-emulator.jar' | sha256sum --check
+          java -jar /tmp/firestore-emulator.jar --host=127.0.0.1 --port=18787 --project_id=demo-firestore-json > /tmp/emulator.log 2>&1 &
+          emulator_pid=$!
+          trap 'kill "$emulator_pid"; wait "$emulator_pid" || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail http://127.0.0.1:18787/ > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl --silent --fail http://127.0.0.1:18787/ > /dev/null
+          FIRESTORE_JSON_TEST_BACKEND=emulator uv run pytest tests/contract

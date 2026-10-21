@@ -1,0 +1,90 @@
+[project]
+name = "firestore-json"
+version = "0.1.0"
+description = "Typed Python client for Google Cloud Firestore, the official emulator, and local JSON storage."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+authors = [{ name = "watanko" }]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: AsyncIO",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
+]
+dependencies = [
+    "filelock>=3.20",
+    "pydantic>=2.12",
+    "structlog>=25.5",
+]
+
+[project.optional-dependencies]
+google = [
+    "google-api-core>=2.42.0",
+    "google-cloud-firestore>=2.19",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project.urls]
+Repository = "https://github.com/watanko/firestore-json"
+Documentation = "https://github.com/watanko/firestore-json/tree/main/docs"
+Issues = "https://github.com/watanko/firestore-json/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/firestore_json"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/**", "tests/**", "docs/**", "README.md", "CONTRIBUTING.md", "CHANGELOG.md", "LICENSE", "pyproject.toml", "uv.lock", "mkdocs.yml", "Taskfile.yml", "Makefile"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "PLR", "RUF", "C90", "SIM", "ANN"]
+
+[tool.ty.environment]
+python-version = "3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "--strict-markers"
+
+[tool.coverage.run]
+source = ["firestore_json"]
+
+[tool.importlinter]
+root_package = "firestore_json"
+
+[[tool.importlinter.contracts]]
+name = "Clients depend on storage contracts; models remain independent"
+type = "layers"
+layers = ["firestore_json.clients", "firestore_json.backends", "firestore_json.models"]
+
+[dependency-groups]
+dev = [
+    "deptry>=0.25.1",
+    "import-linter>=2.15",
+    "mkdocs-material>=9.7.7",
+    "mkdocstrings-python>=2.0.10",
+    "pip-audit>=2.10.1",
+    "pre-commit>=4.7.0",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.17.1",
+    "ty>=0.0.90",
+    "vulture>=2.16",
+    "xenon>=0.9.3",
+    "zizmor>=1.31.1",
+]
+
+[tool.deptry]
+known_first_party = ["firestore_json"]

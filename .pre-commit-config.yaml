@@ -1,0 +1,27 @@
+repos:
+  - repo: local
+    hooks:
+      - id: quality
+        name: Full project quality checks
+        entry: task check
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: tests
+        name: JSON contracts and unit tests
+        entry: task test
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: docs
+        name: Strict documentation build
+        entry: task docs
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: gitleaks
+        name: Secret scan
+        entry: task secret:scan
+        language: system
+        pass_filenames: false
+        always_run: true
