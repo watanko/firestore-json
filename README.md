@@ -60,6 +60,10 @@ with Client(emulator_config) as client:
 
 初版のデータは有限の数値を含むJSONネイティブ型に限定しています。`update`はトップレベルのキーを文字どおり扱います。`"a.b"`はネストしたフィールド指定ではありません。
 
+JSON標準にはtimestamp・bytes・文書参照・地理座標を区別する型がありません。型情報を付けずに通常のJSONへ変換すると、Firestore固有の型を復元できないという限界があります。本ライブラリは現在、そのための型タグやcodecを提供していません。例えば日時を文字列で保存しても、自動的にtimestampへ戻ることはありません。この制限は共通の`DocumentData`を使う3モードすべてに適用されます。
+
+JSONモードはサーバ不要の開発や、文書をファイルで確認・編集する用途に向いています。Firestore固有の型や高度な操作の互換性を検証する場合は、公式SDKから公式Emulatorへ直接接続してください。整数の範囲や配列の制約など、JSONの表現上の限界と現在の実装で再現していない制約は、[互換範囲](docs/guides/compatibility.md)で区別しています。
+
 クエリ・一覧・batch・transaction・timestamp・Increment・リアルタイム購読には未対応です。公式SDK全体をそのまま置き換えるAPIではありません。詳細は[互換範囲](docs/guides/compatibility.md)を参照してください。
 
 ## ドキュメント
