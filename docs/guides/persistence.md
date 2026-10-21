@@ -10,6 +10,8 @@
 
 破損ファイルの読み取り・merge・updateは例外にします。全置換のsetとdeleteは、壊れた文書を明示的に置き換え・削除する操作として利用できます。
 
+保存内容は通常のJSONオブジェクトです。Firestore固有の型情報を保持・復元するcodecはなく、日時を文字列で保存してもtimestampには戻りません。[JSONの型表現の限界](compatibility.md)を確認してください。
+
 ## 公式Emulator
 
 実行中のデータはEmulatorのメモリ上に保持されます。Firebase CLIではexport/importを指定して終了時と次回起動時に引き継げます。

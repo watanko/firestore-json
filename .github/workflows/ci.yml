@@ -29,6 +29,8 @@ jobs:
     strategy:
       matrix:
         python: ['3.12', '3.13']
+    env:
+      UV_PYTHON: ${{ matrix.python }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -39,6 +41,18 @@ jobs:
       - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
       - name: Install locked dependencies
         run: uv sync --frozen --all-extras --all-groups
+      - name: Verify requested Python version
+        run: |
+          uv run python - <<'PY'
+          import os
+          import sys
+
+          actual = f"{sys.version_info.major}.{sys.version_info.minor}"
+          requested = os.environ["UV_PYTHON"]
+          if actual != requested:
+              raise SystemExit(f"Expected Python {requested}, got {actual}")
+          print(f"Verified Python {actual}")
+          PY
       - name: Lint, format, types, layering, dependencies, dead code, complexity
         run: |
           uv run ruff check .
